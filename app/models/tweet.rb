@@ -25,22 +25,6 @@ class Tweet
     collection.aggregate(pipeline)
   end
 
-  def self.produce_csv
-    daily_counts = Tweet.produce_daily_counts
-
-    file_path = Dir.pwd + '/public/output.csv'
-
-    CSV.open(filepath, "wb") do |csv|
-      # csv << ["row", "of", "CSV", "data"]
-      # csv << ["another", "row"]
-      # ...
-
-      # daily_counts.each {|key, value|  }
-      # end
-    end
-
-  end
-
   def self.produce_daily_counts(lower_level = 2) # using lower level of 2 as default
 
     daily_counts = Array.new
