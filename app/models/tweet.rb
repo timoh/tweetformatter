@@ -25,13 +25,77 @@ class Tweet
     collection.aggregate(pipeline)
   end
 
+  def self.produce_csv
+    daily_counts = Tweet.produce_daily_counts
+
+    file_path = Dir.pwd + '/public/output.csv'
+
+    CSV.open(filepath, "wb") do |csv|
+      # csv << ["row", "of", "CSV", "data"]
+      # csv << ["another", "row"]
+      # ...
+
+      # daily_counts.each {|key, value|  }
+      # end
+    end
+
+  end
+
+  def self.produce_daily_counts(lower_level = 2) # using lower level of 2 as default
+
+    daily_counts = Array.new
+
+    start_date = (DateTime.now.to_date-10)
+    end_date = (DateTime.now.to_date+1)
+
+    current_date = start_date
+
+    while current_date <= end_date do
+
+      tweets = Tweet.where({:datetime.gte => (current_date).strftime("%Y-%m-%d"), :datetime.lte => (current_date+1).strftime("%Y-%m-%d")})
+
+      dates = Set.new
+
+      tweets.each do |tw|
+        dates << tw.datetime.to_date
+      end
+
+      #puts "Dates in this range (#{current_date.to_s(:short)}) are #{dates.to_a.to_s}"
+
+      if tweets.size > 0 # tweets for this date found
+        wc = Tweet.inmem_word_count(tweets, lower_level) 
+        #puts "Word count for #{current_date.to_s(:short)} is #{wc}."
+
+        wc.each do |c|
+          c.each do |key, value|
+            dc = DailyCount.new 
+
+              # field :date, type: Date
+              # field :company_symbol, type: String
+              # field :count, type: Integer
+
+            dc.date = current_date.to_date
+            dc.company_symbol = key
+            dc.count = value.to_i
+            dc.save!
+          end
+        end
+
+        #daily_counts << {current_date => wc}
+      else # tweets for this date not found
+        #daily_counts << {current_date => {}}
+      end
+
+      current_date = (current_date+1)
+    end
+
+    return DailyCount.all.size
+  end
 
 
-  def self.inmem_word_count(tweet_array)
+  def self.inmem_word_count(tweet_array, lower_level) # lower_level is the count that a word needs to have to be included
     raise 'Tweet array empty!' if tweet_array.length <= 0
-
     all_tweets = tweet_array
-
     words = []
 
     all_tweets.each do |tweet|
@@ -50,7 +114,7 @@ class Tweet
 
     filtered_counts = Array.new
 
-    counts.each {|key, value| if key.to_s.include?("$") && value > 10 && key.length > 1 then filtered_counts << {key => value} end }
+    counts.each {|key, value| if key.to_s.include?("$") && value > lower_level && key.length > 1 then filtered_counts << {key => value} end }
 
     filtered_counts
   end
