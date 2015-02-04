@@ -1,5 +1,22 @@
 class Fetcher
 
+  def self.read_tweets
+    require 'json'
+
+    counter = 0 
+
+    File.open("/vagrant/Code/js/tweets/tweets.json", "r") do |f|
+      f.each_line do |line|
+        counter = counter + 1
+        Fetcher.persist_tweets([JSON.parse(line)])
+
+        puts counter if counter % 50 
+      end
+    end
+
+    return 
+  end
+
   def self.fetch_tweets
     require 'net/http'
     json = Net::HTTP.get('tweetextractor.herokuapp.com', '/')
